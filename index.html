@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Attendance Terminal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="loadingScreen">
+  <div class="loader-text">Loading A.V.S Please Standby Personnel</div>
+  <div class="loader-bar">
+    <div class="loader-progress"></div>
+  </div>
+</div>
+
+<!-- Main Panel -->
+<div class="panel" id="mainPanel" style="display:none;">
+  <div class="header">A.V.S TERMINAL 1.0</div>
+  <div class="sub">Please enter your Designated 6 pin code on the box.</div>
+
+  <div class="code-box">
+    <input
+      type="text"
+      id="codeInput"
+      maxlength="6"
+      placeholder="_ _ _ _ _ _"
+      autocomplete="off"
+    >
+  </div>
+
+  <div id="nameDisplay" class="name"></div>
+
+  <button id="submitBtn">Confirm</button>
+
+  <div id="message" class="message"></div>
+</div>
+
+<script>
+let codes = {};
+const scriptURL = "https://script.google.com/macros/s/AKfycbxUdXKjT4EohlSorubbj76wpU9sQHezKW4en_51WrYpIVo2D1s-7DqCGOf7It2KIvNS/exec"; // <-- replace with your Apps Script web app
+
+const codeInput = document.getElementById("codeInput");
+const nameDisplay = document.getElementById("nameDisplay");
+const message = document.getElementById("message");
+const button = document.getElementById("submitBtn");
+
+// ----------------------------
+// Philippine Time Helper
+// ----------------------------
+function getPHTime() {
+  const now = new Date();
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  return new Date(utc + 8 * 60 * 60 * 1000); // UTC+8
+}
+
+function getAttendanceStatus() {
+  const phTime = getPHTime();
+  const hour = phTime.getHours();
+  const minute = phTime.getMinutes();
+
+  if (hour >= 6 && (hour < 8 || (hour === 8 && minute === 0))) return "Present";
+  else if ((hour === 8 && minute >= 1) || (hour > 8 && hour < 16) || (hour === 16 && minute === 0)) return "Late";
+  else return "Absent";
+}
+
+function getPHDateString() {
+  const phTime = getPHTime();
+  return phTime.toLocaleDateString("en-PH");
+}
+
+function getPHTimeString() {
+  const phTime = getPHTime();
+  return phTime.getHours().toString().padStart(2,'0') + ":" + phTime.getMinutes().toString().padStart(2,'0'); // 24-hour format
+}
+
+// ----------------------------
+// Loading screen simulation
+// ----------------------------
+window.addEventListener("load", () => {
+  const loader = document.getElementById("loadingScreen");
+  const panel = document.getElementById("mainPanel");
+  let progress = 0;
+  const progressBar = document.querySelector(".loader-progress");
+
+  const interval = setInterval(() => {
+    progress += 1;
+    progressBar.style.width = progress + "%";
+    if(progress >= 100){
+      clearInterval(interval);
+      loader.style.display = "none";
+      panel.style.display = "block";
+    }
+  }, 20);
+});
+
+// Load codes.json
+fetch("codes.json")
+  .then(res => res.json())
+  .then(data => codes = data);
+
+// Show operator name as code is typed
+codeInput.addEventListener("input", () => {
+  codeInput.value = codeInput.value
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 6);
+
+  const code = codeInput.value;
+  nameDisplay.textContent = codes[code] || "";
+});
+
+// Submit to Google Sheets
+button.addEventListener("click", () => {
+  const code = codeInput.value.trim();
+
+  if (!codes[code] || code.length < 6) {
+    message.textContent = "Invalid operator code";
+    message.className = "message error";
+    return;
+  }
+
+  const status = getAttendanceStatus();
+  const date = getPHDateString();
+  const time = getPHTimeString();
+
+  message.textContent = "Submitting...";
+  message.className = "message";
+
+  fetch(scriptURL, {
+    method: "POST",
+    body: JSON.stringify({ code, name: codes[code], status, date, time })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (!data.success) {
+      message.textContent = data.message;
+      message.className = "message error";
+      return;
+    }
+
+    message.textContent = `Attendance recorded\nStatus: ${data.status}\nTime: ${data.time}`;
+    message.className = "message success";
+    button.disabled = true;
+    codeInput.disabled = true;
+  })
+  .catch(() => {
+    message.textContent = "Connection error";
+    message.className = "message error";
+  });
+});
+</script>
+
+</body>
+</html>
