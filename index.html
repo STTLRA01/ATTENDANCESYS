@@ -18,6 +18,7 @@
 <!-- Main Panel -->
 <div class="panel" id="mainPanel" style="display:none;">
   <div class="header">A.V.S TERMINAL 1.0</div>
+  <div class="sub">Current PH Time: <span id="phClock">--:--</span></div>
   <div class="sub">Please enter your Designated 6 pin code on the box.</div>
 
   <div class="code-box">
@@ -39,12 +40,13 @@
 
 <script>
 let codes = {};
-const scriptURL = "https://script.google.com/macros/s/AKfycbxUdXKjT4EohlSorubbj76wpU9sQHezKW4en_51WrYpIVo2D1s-7DqCGOf7It2KIvNS/exec"; // <-- replace with your Apps Script web app
+const scriptURL = "https://script.google.com/macros/s/AKfycbzlSP8NQcUDLOhyHvqVwjgk4GCBrbkcJVXBRYxyvKk6YxueRLnKy1bw0s7TFTfD8Z-P/exec"; // <-- replace with your Apps Script web app
 
 const codeInput = document.getElementById("codeInput");
 const nameDisplay = document.getElementById("nameDisplay");
 const message = document.getElementById("message");
 const button = document.getElementById("submitBtn");
+const phClock = document.getElementById("phClock");
 
 // ----------------------------
 // Philippine Time Helper
@@ -72,8 +74,21 @@ function getPHDateString() {
 
 function getPHTimeString() {
   const phTime = getPHTime();
-  return phTime.getHours().toString().padStart(2,'0') + ":" + phTime.getMinutes().toString().padStart(2,'0'); // 24-hour format
+  return phTime.getHours().toString().padStart(2,'0') + ":" + phTime.getMinutes().toString().padStart(2,'0');
 }
+
+// ----------------------------
+// Live PH clock
+// ----------------------------
+function updatePHClock() {
+  const phTime = getPHTime();
+  const hours = phTime.getHours().toString().padStart(2,'0');
+  const minutes = phTime.getMinutes().toString().padStart(2,'0');
+  const seconds = phTime.getSeconds().toString().padStart(2,'0');
+  phClock.textContent = `${hours}:${minutes}:${seconds}`;
+}
+setInterval(updatePHClock, 1000); // update every second
+updatePHClock(); // initial call
 
 // ----------------------------
 // Loading screen simulation
