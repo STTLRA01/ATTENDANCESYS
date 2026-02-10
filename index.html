@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Attendance Terminal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="loadingScreen">
+  <div class="loader-text">LOADING ATTENDANCE TERMINAL</div>
+  <div class="loader-bar">
+    <div class="loader-progress"></div>
+  </div>
+</div>
+
+<!-- Main Panel -->
+<div class="panel" id="mainPanel" style="display:none;">
+  <div class="header">AIS ATTENDANCE TERMINAL SYSTEM /div>
+  <div class="sub">Attendance Verification System Please Enter your Designated code</div>
+
+  <div class="code-box">
+    <input
+      type="text"
+      id="codeInput"
+      maxlength="6"
+      placeholder="_ _ _ _ _ _"
+      autocomplete="off"
+      inputmode="numeric"
+    >
+  </div>
+
+  <div id="nameDisplay" class="name"></div>
+
+  <button id="submitBtn">Confirm</button>
+
+  <div id="message" class="message"></div>
+</div>
+
+<script>
+let codes = {};
+const scriptURL = "https://script.google.com/macros/s/AKfycbyMwztfrmyYKEDKYuGuutYuLWnRCEPQEtc-mwDdF-w_Qcbp3nnzsiXCE_z6UZYC6g/exec";
+
+const codeInput = document.getElementById("codeInput");
+const nameDisplay = document.getElementById("nameDisplay");
+const message = document.getElementById("message");
+const button = document.getElementById("submitBtn");
+
+// Loading screen
+window.addEventListener("load", () => {
+  const loader = document.getElementById("loadingScreen");
+  const panel = document.getElementById("mainPanel");
+
+  let progress = 0;
+  const progressBar = document.querySelector(".loader-progress");
+
+  const interval = setInterval(() => {
+    progress += 1;
+    progressBar.style.width = progress + "%";
+    if(progress >= 100){
+      clearInterval(interval);
+      loader.style.display = "none";
+      panel.style.display = "block";
+    }
+  }, 20);
+});
+
+// Load JSON codes
+fetch("codes.json")
+  .then(res => res.json())
+  .then(data => codes = data);
+
+// Show name as code is entered
+codeInput.addEventListener("input", () => {
+  codeInput.value = codeInput.value
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 6);
+
+  const code = codeInput.value;
+  nameDisplay.textContent = codes[code] || "";
+});
+
+// Submit to Sheets
+button.addEventListener("click", () => {
+  const code = codeInput.value.trim();
+
+  if (!codes[code] || code.length < 6) {
+    message.textContent = "Invalid operator code";
+    message.className = "message error";
+    return;
+  }
+
+  message.textContent = "Submitting...";
+  message.className = "message";
+
+  fetch(scriptURL, {
+    method: "POST",
+    body: JSON.stringify({
+      code: code,
+      name: codes[code]
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (!data.success) {
+      message.textContent = data.message;
+      message.className = "message error";
+      return;
+    }
+
+    message.textContent =
+      "Attendance recorded\nStatus: " + data.status;
+    message.className = "message success";
+    button.disabled = true;
+    codeInput.disabled = true;
+  })
+  .catch(() => {
+    message.textContent = "Connection error";
+    message.className = "message error";
+  });
+});
+</script>
+
+</body>
+</html>
