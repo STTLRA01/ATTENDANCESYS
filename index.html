@@ -17,8 +17,8 @@
 
 <!-- Main Panel -->
 <div class="panel" id="mainPanel" style="display:none;">
-  <div class="header">AIS ATTENDANCE TERMINAL SYSTEM</div>
-  <div class="sub">Attendance Verification System Please Enter your Designated code</div>
+  <div class="header">RHODES ISLAND</div>
+  <div class="sub">Attendance Verification System</div>
 
   <div class="code-box">
     <input
@@ -27,7 +27,6 @@
       maxlength="6"
       placeholder="_ _ _ _ _ _"
       autocomplete="off"
-      inputmode="numeric"
     >
   </div>
 
@@ -47,11 +46,10 @@ const nameDisplay = document.getElementById("nameDisplay");
 const message = document.getElementById("message");
 const button = document.getElementById("submitBtn");
 
-// Loading screen
+// Loading screen simulation
 window.addEventListener("load", () => {
   const loader = document.getElementById("loadingScreen");
   const panel = document.getElementById("mainPanel");
-
   let progress = 0;
   const progressBar = document.querySelector(".loader-progress");
 
@@ -63,15 +61,15 @@ window.addEventListener("load", () => {
       loader.style.display = "none";
       panel.style.display = "block";
     }
-  }, 20);
+  }, 20); // 20ms per step
 });
 
-// Load JSON codes
+// Load codes.json
 fetch("codes.json")
   .then(res => res.json())
   .then(data => codes = data);
 
-// Show name as code is entered
+// Show operator name as code is typed
 codeInput.addEventListener("input", () => {
   codeInput.value = codeInput.value
     .toUpperCase()
@@ -82,7 +80,7 @@ codeInput.addEventListener("input", () => {
   nameDisplay.textContent = codes[code] || "";
 });
 
-// Submit to Sheets
+// Submit to Google Sheets
 button.addEventListener("click", () => {
   const code = codeInput.value.trim();
 
@@ -125,5 +123,3 @@ button.addEventListener("click", () => {
 
 </body>
 </html>
-
-
