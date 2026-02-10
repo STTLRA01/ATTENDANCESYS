@@ -39,14 +39,49 @@
 
 <script>
 let codes = {};
-const scriptURL = "https://script.google.com/macros/s/AKfycbyMwztfrmyYKEDKYuGuutYuLWnRCEPQEtc-mwDdF-w_Qcbp3nnzsiXCE_z6UZYC6g/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbzJLAzo_iWTJIV-75d2hyp6RS3MSJVuJpAa6Q6_nHPg58fugJ2sa_T4-JYwSczHBMHQ/exec";
 
 const codeInput = document.getElementById("codeInput");
 const nameDisplay = document.getElementById("nameDisplay");
 const message = document.getElementById("message");
 const button = document.getElementById("submitBtn");
 
+// ----------------------------
+// Philippine Time Helper
+// ----------------------------
+function getPHTime() {
+  const now = new Date();
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  return new Date(utc + 8 * 60 * 60 * 1000); // UTC+8
+}
+
+function getAttendanceStatus() {
+  const phTime = getPHTime();
+  const hour = phTime.getHours();
+  const minute = phTime.getMinutes();
+
+  if (hour >= 6 && (hour < 8 || (hour === 8 && minute === 0))) {
+    return "Present";
+  } else if ((hour === 8 && minute >= 1) || (hour > 8 && hour < 16) || (hour === 16 && minute === 0)) {
+    return "Late";
+  } else {
+    return "Absent";
+  }
+}
+
+function getPHDateString() {
+  const phTime = getPHTime();
+  return phTime.toLocaleDateString("en-PH");
+}
+
+function getPHTimeString() {
+  const phTime = getPHTime();
+  return phTime.toLocaleTimeString("en-PH", { hour12: true });
+}
+
+// ----------------------------
 // Loading screen simulation
+// ----------------------------
 window.addEventListener("load", () => {
   const loader = document.getElementById("loadingScreen");
   const panel = document.getElementById("mainPanel");
@@ -90,6 +125,10 @@ button.addEventListener("click", () => {
     return;
   }
 
+  const status = getAttendanceStatus();
+  const date = getPHDateString();
+  const time = getPHTimeString();
+
   message.textContent = "Submitting...";
   message.className = "message";
 
@@ -97,7 +136,10 @@ button.addEventListener("click", () => {
     method: "POST",
     body: JSON.stringify({
       code: code,
-      name: codes[code]
+      name: codes[code],
+      status: status,
+      date: date,
+      time: time
     })
   })
   .then(res => res.json())
@@ -109,7 +151,7 @@ button.addEventListener("click", () => {
     }
 
     message.textContent =
-      "Attendance recorded\nStatus: " + data.status;
+      "Attendance recorded\nStatus: " + data.status + "\nTime: " + time;
     message.className = "message success";
     button.disabled = true;
     codeInput.disabled = true;
@@ -123,4 +165,3 @@ button.addEventListener("click", () => {
 
 </body>
 </html>
-
